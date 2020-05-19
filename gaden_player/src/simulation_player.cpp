@@ -5,6 +5,7 @@
  * It also generates a point cloud representing the gas concentration [ppm] on the 3D environment
  --------------------------------------------------------------------------------*/
 
+#include <boost/format.hpp>
 #include "simulation_player.h"
 
 //--------------- SERVICES CALLBACKS----------------------//
@@ -163,9 +164,9 @@ void loadNodeParameters(ros::NodeHandle private_nh)
 void init_all_simulation_instances()
 {
     ROS_INFO("[Player] Initializing %i instances",num_simulators);
-
+    
     // At least one instance is needed which loads the wind field data!
-    sim_obj so(simulation_data[0], true);
+    sim_obj so(simulation_data[0], true); // FilamentSimulation_gasType_0_sourcePosition_x_y_z_iteration_
     player_instances.push_back(so);
 
     //Create other instances, but do not save wind information! It is the same for all instances
@@ -173,6 +174,7 @@ void init_all_simulation_instances()
     {
         sim_obj so(simulation_data[i], false);
         player_instances.push_back(so);
+        ROS_INFO("[Player TESTING] %s", simulation_data[i].c_str());
     }
 
     //Set size for service responses
@@ -254,7 +256,7 @@ void sim_obj::load_data_from_logfile(int sim_iteration)
     {
         line_counter++;
         //ROS_INFO("Reading Line %i", line_counter);
-        //ROS_INFO("%s",line.c_str());
+        // ROS_INFO("%s",line.c_str());
 
         if (first_reading && (line_counter == 1))
         {
@@ -282,16 +284,19 @@ void sim_obj::load_data_from_logfile(int sim_iteration)
         }
         else if (first_reading && (line_counter == 3))
         {
+            
             //Get Number of cells (X,Y,Z)
             pos = line.find(" ");
             line.erase(0, pos + 1);
 
             pos = line.find(" ");
             environment_cells_x = atoi(line.substr(0, pos).c_str());
+            
             line.erase(0, pos + 1);
             pos = line.find(" ");
             environment_cells_y = atoi(line.substr(0, pos).c_str());
             environment_cells_z = atoi(line.substr(pos + 1).c_str());
+            ROS_INFO("[TESTING] Env cell sizes %d, %d, %d",environment_cells_x,environment_cells_y,environment_cells_z);
         }
         else if (first_reading && (line_counter == 4))
         {
@@ -342,6 +347,11 @@ void sim_obj::load_data_from_logfile(int sim_iteration)
             pos = line.find(" ");
             conc = atof(line.substr(0, pos).c_str());
             line.erase(0, pos + 1);
+
+            if (line_counter == 69609)
+            {
+                ROS_INFO("[TESTING] The non-zero concentration %f", conc);
+            }
 
             pos = line.find(" ");
             u = atof(line.substr(0, pos).c_str());
@@ -476,7 +486,8 @@ void sim_obj::get_concentration_as_markers(visualization_msgs::Marker &mkr_point
                 geometry_msgs::Point p; //Location of point
                 std_msgs::ColorRGBA color;  //Color of point
 
-                double gas_value = C[i][j][k]*1;
+                double gas_value = C[i][j][k]*1; 
+                
 
                 for (int N=0;N<(int)round(gas_value/2);N++)
                 {
@@ -484,7 +495,9 @@ void sim_obj::get_concentration_as_markers(visualization_msgs::Marker &mkr_point
                     p.x = env_min_x + (i+0.5)*environment_cell_size + ((rand()%100)/100.0f)*environment_cell_size;
                     p.y = env_min_y + (j+0.5)*environment_cell_size + ((rand()%100)/100.0f)*environment_cell_size;
                     p.z = env_min_z + (k+0.5)*environment_cell_size + ((rand()%100)/100.0f)*environment_cell_size;
-
+                    
+                    // ROS_INFO("[TESTING] gas_value = %f", C[i][j][k]);
+                    // ROS_INFO("[TESTING] %d, %d, %d,", i,j,k);
                     //Set color of particle according to gas type
                     color.a = 1.0;
                     if (!strcmp(gas_type.c_str(),"ethanol"))
@@ -536,6 +549,8 @@ void sim_obj::get_concentration_as_markers(visualization_msgs::Marker &mkr_point
                     //Add particle marker
                     mkr_points.points.push_back(p);
                     mkr_points.colors.push_back(color);
+                    
+                   
                 }
 
             }

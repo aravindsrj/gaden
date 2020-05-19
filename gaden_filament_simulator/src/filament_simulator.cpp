@@ -860,6 +860,7 @@ void CFilamentSimulator::publish_markers()
 
 	//Publish marker of the filaments
 	marker_pub.publish(filament_marker);
+	//ROS_DEBUG("Published something ***************************************");
 }
 
 
